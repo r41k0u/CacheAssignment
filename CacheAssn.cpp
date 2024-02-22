@@ -19,6 +19,7 @@ bool AbstractCache<K, V>::use(const K& key) {
 
 template<typename K, typename V>
 V AbstractCache<K, V>::get(const K& key) {
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (!use(key)) {
 		std::cerr << "Invalid Key requested. Returning default value\n";
 		return NULL;
@@ -28,6 +29,7 @@ V AbstractCache<K, V>::get(const K& key) {
 
 template<typename K, typename V>
 void FIFOCache<K, V>::insert(const K& key, const V& value) {
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (cache_map.size() == max_cache_size) {
 		cache_map.erase(fifo_map.front());
 		fifo_map.pop();
@@ -38,6 +40,7 @@ void FIFOCache<K, V>::insert(const K& key, const V& value) {
 
 template<typename K, typename V>
 FIFOCache<K, V>::~FIFOCache() {
+	std::lock_guard<std::mutex> lock{safe_op};
 	while (!fifo_map.empty())
 		fifo_map.pop();
 	cache_map.clear();
@@ -45,6 +48,7 @@ FIFOCache<K, V>::~FIFOCache() {
 
 template<typename K, typename V>
 void LIFOCache<K, V>::insert(const K& key, const V& value) {
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (cache_map.size() == max_cache_size) {
 		cache_map.erase(lifo_map.top());
 		lifo_map.pop();
@@ -55,6 +59,7 @@ void LIFOCache<K, V>::insert(const K& key, const V& value) {
 
 template<typename K, typename V>
 LIFOCache<K, V>::~LIFOCache() {
+	std::lock_guard<std::mutex> lock{safe_op};
 	while (!lifo_map.empty())
 		lifo_map.pop();
 	cache_map.clear();
@@ -62,6 +67,7 @@ LIFOCache<K, V>::~LIFOCache() {
 
 template<typename K, typename V>
 void LRUCache<K, V>::insert(const K& key, const V& value) {
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (cache_map.size() == max_cache_size) {
 		cache_map.erase(lru_map.front());
 		lru_map.pop_front();
@@ -83,6 +89,7 @@ bool LRUCache<K, V>::use(const K& key) {
 
 template<typename K, typename V>
 LRUCache<K, V>::~LRUCache() {
+	std::lock_guard<std::mutex> lock{safe_op};
 	while (!lru_map.empty())
 		lru_map.pop_front();
 	cache_map.clear();

@@ -6,12 +6,14 @@
 #include <queue>
 #include <stack>
 #include <algorithm>
+#include <mutex>
 
 template<typename K, typename V>
 class AbstractCache {
 	protected:
 		std::unordered_map<K, V> cache_map;
 		size_t max_cache_size;
+		mutable std::mutex safe_op;
 		virtual bool use(const K& key);
 	public:
 		AbstractCache(size_t cache_size);
