@@ -1,5 +1,10 @@
-﻿#include "CacheAssn.h"
+﻿#pragma once
+#include "CacheAssn.h"
 
+// AbstractCache class constructor
+// Min element count is 8
+// Max element count is 65536
+// Cache is supposed to be small in size
 template<typename K, typename V>
 AbstractCache<K, V>::AbstractCache(size_t cache_size) : max_cache_size(cache_size) {
 	if (cache_size < 8) {
@@ -13,11 +18,6 @@ AbstractCache<K, V>::AbstractCache(size_t cache_size) : max_cache_size(cache_siz
 }
 
 template<typename K, typename V>
-bool AbstractCache<K, V>::use(const K& key) {
-	return cache_map.find(key) != cache_map.end();
-}
-
-template<typename K, typename V>
 V AbstractCache<K, V>::get(const K& key) {
 	std::lock_guard<std::mutex> lock{safe_op};
 	if (!use(key)) {
@@ -27,103 +27,120 @@ V AbstractCache<K, V>::get(const K& key) {
 	return cache_map[key];
 }
 
+// use function for CacheKeyList class
+// This function is used to check if a key is present in the cache
 template<typename K, typename V>
-void FIFOCache<K, V>::insert(const K& key, const V& value) {
-	std::lock_guard<std::mutex> lock{safe_op};
-	if (cache_map.size() == max_cache_size) {
-		cache_map.erase(fifo_map.front());
-		fifo_map.pop();
-	}
-	cache_map[key] = value;
-	fifo_map.push(key);
+bool CacheKeyList<K, V>::use(const K& key) {
+	return std::find(key_map.begin(), key_map.end(), key) != key_map.end();
 }
 
 template<typename K, typename V>
-FIFOCache<K, V>::~FIFOCache() {
+void CacheKeyList<K, V>::erase(const K& key) {
 	std::lock_guard<std::mutex> lock{safe_op};
-	while (!fifo_map.empty())
-		fifo_map.pop();
-	cache_map.clear();
+	if (std::find(key_map.begin(), key_map.end(), key) != key_map.end()) {
+		key_map.remove(key);
+		cache_map.erase(key);
+	}
+}
+
+template<typename K, typename V>
+void FIFOCache<K, V>::insert(const K& key, const V& value) {
+	std::lock_guard<std::mutex> lock{safe_op};
+	
+	if (use(key)) {
+		key_map.remove(key);
+		key_map.push_back(key);
+		cache_map[key] = value;
+		return;
+	}
+
+	if (cache_map.size() == max_cache_size) {
+		cache_map.erase(key_map.front());
+		key_map.pop_front();
+	}
+	cache_map[key] = value;
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 void LIFOCache<K, V>::insert(const K& key, const V& value) {
 	std::lock_guard<std::mutex> lock{safe_op};
+	if (use(key)) {
+		key_map.remove(key);
+		key_map.push_back(key);
+		cache_map[key] = value;
+		return;
+	}
+
 	if (cache_map.size() == max_cache_size) {
-		cache_map.erase(lifo_map.top());
-		lifo_map.pop();
+		cache_map.erase(key_map.back());
+		key_map.pop_back();
 	}
 	cache_map[key] = value;
-	lifo_map.push(key);
-}
-
-template<typename K, typename V>
-LIFOCache<K, V>::~LIFOCache() {
-	std::lock_guard<std::mutex> lock{safe_op};
-	while (!lifo_map.empty())
-		lifo_map.pop();
-	cache_map.clear();
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 void LRUCache<K, V>::insert(const K& key, const V& value) {
 	std::lock_guard<std::mutex> lock{safe_op};
+	if (use(key)) {
+		cache_map[key] = value;
+		return;
+	}
 	if (cache_map.size() == max_cache_size) {
-		cache_map.erase(lru_map.front());
-		lru_map.pop_front();
+		cache_map.erase(key_map.front());
+		key_map.pop_front();
 	}
 	cache_map[key] = value;
-	lru_map.push_back(key);
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 bool LRUCache<K, V>::use(const K& key) {
-	auto it = std::find(lru_map.begin(), lru_map.end(), key);
-	if (it == lru_map.end())
+	auto it = std::find(key_map.begin(), key_map.end(), key);
+	if (it == key_map.end())
 		return false;
 
-	lru_map.remove(key);
-	lru_map.push_back(key);
+	key_map.remove(key);
+	key_map.push_back(key);
 	return true;
 }
 
 template<typename K, typename V>
-LRUCache<K, V>::~LRUCache() {
-	std::lock_guard<std::mutex> lock{safe_op};
-	while (!lru_map.empty())
-		lru_map.pop_front();
-	cache_map.clear();
+void test_cache(AbstractCache<K, V>* cache) {
+	std::cout << "Cache Sanity Check:\n";
+	cache->policy();
+
+	size_t max_size = cache->max_size();
+	for (int i = 0; i < cache->max_size(); i++) {
+		cache->insert(i, i);
+	}
+
+	std::cout << "Data filled. Access 2 indices\n";
+	// Access the first 2 elements (sanity check for LRU)
+	std::cout << cache->get(0) << "\n";
+	std::cout << cache->get(1) << "\n";
+
+	std::cout << "Adding 2 more entries\n";
+	cache->insert(max_size, max_size);
+	cache->insert(max_size + 1, max_size + 1);
+
+	std::cout << "Trying to access all the data written to cache\n";
+	for (int i = 0; i < max_size + 2; i++) {
+		std::cout << cache->get(i) << "\n";
+	}
+	std::cout << "\n\n";
 }
 
-int main()
-{
-	// Tests for the LRUCache class
-	LRUCache<int, int> cachedt(4);
-	cachedt.insert(1, 1);
-	cachedt.insert(2, 2);
-	cachedt.insert(3, 3);
-	cachedt.insert(4, 4);
+int main() {
+	std::vector<AbstractCache<int, int>*> cache;
+	cache.push_back(new FIFOCache<int, int>(8));
+	cache.push_back(new LIFOCache<int, int>(8));
+	cache.push_back(new LRUCache<int, int>(8));
 
-	std::cout << cachedt[1] << std::endl; // 1
-	std::cout << cachedt[2] << std::endl; // 2
-	std::cout << cachedt[3] << std::endl; // 3
-	std::cout << cachedt[4] << std::endl; // 4
-	std::cout << cachedt[5] << std::endl; // NULL
-
-	cachedt.insert(5, 5);
-	cachedt.insert(6, 6);
-	cachedt.insert(7, 7);
-	cachedt.insert(8, 8);
-	
-	std::cout << cachedt[7] << std::endl; // 7
-	std::cout << cachedt[8] << std::endl; // 8
-	std::cout << cachedt[1] << std::endl; // 1
-
-	cachedt.insert(9, 9);
-
-	std::cout << cachedt[1] << std::endl; // 1
-	std::cout << cachedt[2] << std::endl; // NULL
-	std::cout << cachedt[9] << std::endl; // 9
+	test_cache(cache[0]);
+	test_cache(cache[1]);
+	test_cache(cache[2]);
 
 	return 0;
 }
