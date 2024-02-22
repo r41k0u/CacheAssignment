@@ -17,3 +17,8 @@ Implements FIFO, LIFO and LRU cache in C++
 Just inherit from AbstractCache class and implement the pure virtual left unimplemented there. You can also add more order, like adding an intermediate class which can handle your eviction policy's data structure. 
 ### How to try this code
 You can use the CMake build system to build and run this code.
+- Make a build directory and cd into it
+- Run `cmake ..` and `make`
+- Run the executable
+
+Mutex locks have been used in all public functions to ensure thread safety.
