@@ -36,73 +36,73 @@ bool CacheKeyList<K, V>::use(const K& key) {
 
 template<typename K, typename V>
 void CacheKeyList<K, V>::erase(const K& key) {
-	std::lock_guard<std::mutex> lock{AbstractCache<K, V>::safe_op};
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (std::find(key_map.begin(), key_map.end(), key) != key_map.end()) {
 		key_map.remove(key);
-		AbstractCache<K, V>::cache_map.erase(key);
+		cache_map.erase(key);
 	}
 }
 
 template<typename K, typename V>
 void FIFOCache<K, V>::insert(const K& key, const V& value) {
-	std::lock_guard<std::mutex> lock{AbstractCache<K, V>::safe_op};
+	std::lock_guard<std::mutex> lock{safe_op};
 	
-	if (CacheKeyList<K, V>::use(key)) {
-		CacheKeyList<K, V>::key_map.remove(key);
-		CacheKeyList<K, V>::key_map.push_back(key);
-		AbstractCache<K, V>::cache_map[key] = value;
+	if (use(key)) {
+		key_map.remove(key);
+		key_map.push_back(key);
+		cache_map[key] = value;
 		return;
 	}
 
-	if (AbstractCache<K, V>::cache_map.size() == AbstractCache<K, V>::max_cache_size) {
-		AbstractCache<K, V>::cache_map.erase(CacheKeyList<K, V>::key_map.front());
-		CacheKeyList<K, V>::key_map.pop_front();
+	if (cache_map.size() == max_cache_size) {
+		cache_map.erase(key_map.front());
+		key_map.pop_front();
 	}
-	AbstractCache<K, V>::cache_map[key] = value;
-	CacheKeyList<K, V>::key_map.push_back(key);
+	cache_map[key] = value;
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 void LIFOCache<K, V>::insert(const K& key, const V& value) {
-	std::lock_guard<std::mutex> lock{AbstractCache<K, V>::safe_op};
-	if (CacheKeyList<K, V>::use(key)) {
-		CacheKeyList<K, V>::key_map.remove(key);
-		CacheKeyList<K, V>::key_map.push_back(key);
-		AbstractCache<K, V>::cache_map[key] = value;
+	std::lock_guard<std::mutex> lock{safe_op};
+	if (use(key)) {
+		key_map.remove(key);
+		key_map.push_back(key);
+		cache_map[key] = value;
 		return;
 	}
 
-	if (AbstractCache<K, V>::cache_map.size() == AbstractCache<K, V>::max_cache_size) {
-		AbstractCache<K, V>::cache_map.erase(CacheKeyList<K, V>::key_map.back());
-		CacheKeyList<K, V>::key_map.pop_back();
+	if (cache_map.size() == max_cache_size) {
+		cache_map.erase(key_map.back());
+		key_map.pop_back();
 	}
-	AbstractCache<K, V>::cache_map[key] = value;
-	CacheKeyList<K, V>::key_map.push_back(key);
+	cache_map[key] = value;
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 void LRUCache<K, V>::insert(const K& key, const V& value) {
-	std::lock_guard<std::mutex> lock{AbstractCache<K, V>::safe_op};
+	std::lock_guard<std::mutex> lock{safe_op};
 	if (use(key)) {
-		AbstractCache<K, V>::cache_map[key] = value;
+		cache_map[key] = value;
 		return;
 	}
-	if (AbstractCache<K, V>::cache_map.size() == AbstractCache<K, V>::max_cache_size) {
-		AbstractCache<K, V>::cache_map.erase(CacheKeyList<K, V>::key_map.front());
-		CacheKeyList<K, V>::key_map.pop_front();
+	if (cache_map.size() == max_cache_size) {
+		cache_map.erase(key_map.front());
+		key_map.pop_front();
 	}
-	AbstractCache<K, V>::cache_map[key] = value;
-	CacheKeyList<K, V>::key_map.push_back(key);
+	cache_map[key] = value;
+	key_map.push_back(key);
 }
 
 template<typename K, typename V>
 bool LRUCache<K, V>::use(const K& key) {
-	auto it = std::find(CacheKeyList<K, V>::key_map.begin(), CacheKeyList<K, V>::key_map.end(), key);
-	if (it == CacheKeyList<K, V>::key_map.end())
+	auto it = std::find(key_map.begin(), key_map.end(), key);
+	if (it == key_map.end())
 		return false;
 
-	CacheKeyList<K, V>::key_map.remove(key);
-	CacheKeyList<K, V>::key_map.push_back(key);
+	key_map.remove(key);
+	key_map.push_back(key);
 	return true;
 }
 

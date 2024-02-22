@@ -45,6 +45,9 @@ class AbstractCache {
 template<typename K, typename V>
 class CacheKeyList : public AbstractCache<K, V> {
 	protected:
+		using AbstractCache<K, V>::safe_op;
+		using AbstractCache<K, V>::cache_map;
+		using AbstractCache<K, V>::max_cache_size;
 		std::list<K> key_map;
 		virtual bool use(const K& key);
 	public:
@@ -61,6 +64,12 @@ class CacheKeyList : public AbstractCache<K, V> {
 
 template<typename K, typename V>
 class FIFOCache : public CacheKeyList<K, V> {
+	private:
+		using CacheKeyList<K, V>::key_map;
+		using CacheKeyList<K, V>::cache_map;
+		using CacheKeyList<K, V>::max_cache_size;
+		using CacheKeyList<K, V>::safe_op;
+		using CacheKeyList<K, V>::use;
 	public:
 		FIFOCache(size_t cache_size = 1024) : CacheKeyList<K, V>(cache_size) {}
 		void insert(const K& key, const V& value);
@@ -73,6 +82,12 @@ class FIFOCache : public CacheKeyList<K, V> {
 
 template<typename K, typename V>
 class LIFOCache : public CacheKeyList<K, V> {
+	private:
+		using CacheKeyList<K, V>::key_map;
+		using CacheKeyList<K, V>::cache_map;
+		using CacheKeyList<K, V>::max_cache_size;
+		using CacheKeyList<K, V>::safe_op;
+		using CacheKeyList<K, V>::use;
 	public:
 		LIFOCache(size_t cache_size = 1024) : CacheKeyList<K, V>(cache_size) {}
 		void insert(const K& key, const V& value);
@@ -86,6 +101,10 @@ class LIFOCache : public CacheKeyList<K, V> {
 template<typename K, typename V>
 class LRUCache : public CacheKeyList<K, V> {
 	private:
+		using CacheKeyList<K, V>::key_map;
+		using CacheKeyList<K, V>::cache_map;
+		using CacheKeyList<K, V>::max_cache_size;
+		using CacheKeyList<K, V>::safe_op;
 		bool use(const K& key);
 	public:
 		LRUCache(size_t cache_size = 1024) : CacheKeyList<K, V>(cache_size) {}
