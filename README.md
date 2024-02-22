@@ -22,3 +22,6 @@ You can use the CMake build system to build and run this code.
 - Run the executable
 
 Mutex locks have been used in all public functions to ensure thread safety.
+
+### PS
+I had to use a lot of `using` statements in the header due to [this](https://stackoverflow.com/questions/4643074/why-do-i-have-to-access-template-base-class-members-through-the-this-pointer). I wrote it on MSVC, where this rule is ignored and `using` statements are not needed. Templated base classes are treated like ordinary base classes. But to make it work on UNIX, I had to either add the `this` keyword everywhere, prefix the attributes with `Base_Class<K, V>` everywhere, write a preprocessor macro or use the using keyword.
