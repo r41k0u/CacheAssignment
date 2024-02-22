@@ -13,6 +13,15 @@ AbstractCache<K, V>::AbstractCache(size_t cache_size) : max_cache_size(cache_siz
 }
 
 template<typename K, typename V>
+V AbstractCache<K, V>::get(const K& key) {
+	if (!use(key)) {
+		std::cerr << "Invalid Key requested. Returning default value\n";
+		return NULL;
+	}
+	return cache_map[key];
+}
+
+template<typename K, typename V>
 void FIFOCache<K, V>::insert(const K& key, const V& value) {
 	if (cache_map.size() == max_cache_size) {
 		cache_map.erase(fifo_map.front());
@@ -23,19 +32,14 @@ void FIFOCache<K, V>::insert(const K& key, const V& value) {
 }
 
 template<typename K, typename V>
-V FIFOCache<K, V>::get(const K& key) {
-	if (cache_map.find(key) == cache_map.end()) {
-		std::cerr << "Invalid Key requested. Returning default value\n";
-		return NULL;
-	}
-	return cache_map[key];
+bool FIFOCache<K, V>::use(const K& key) {
+	return cache_map.find(key) != cache_map.end();
 }
 
 template<typename K, typename V>
 FIFOCache<K, V>::~FIFOCache() {
-	while (!fifo_map.empty()) {
+	while (!fifo_map.empty())
 		fifo_map.pop();
-	}
 	cache_map.clear();
 }
 
@@ -50,26 +54,49 @@ void LIFOCache<K, V>::insert(const K& key, const V& value) {
 }
 
 template<typename K, typename V>
-V LIFOCache<K, V>::get(const K& key) {
-	if (cache_map.find(key) == cache_map.end()) {
-		std::cerr << "Invalid Key requested. Returning default value\n";
-		return NULL;
-	}
-	return cache_map[key];
+bool LIFOCache<K, V>::use(const K& key) {
+	return cache_map.find(key) != cache_map.end();
 }
 
 template<typename K, typename V>
 LIFOCache<K, V>::~LIFOCache() {
-	while (!lifo_map.empty()) {
+	while (!lifo_map.empty())
 		lifo_map.pop();
+	cache_map.clear();
+}
+
+template<typename K, typename V>
+void LRUCache<K, V>::insert(const K& key, const V& value) {
+	if (cache_map.size() == max_cache_size) {
+		cache_map.erase(lru_map.front());
+		lru_map.pop_front();
 	}
+	cache_map[key] = value;
+	lru_map.push_back(key);
+}
+
+template<typename K, typename V>
+bool LRUCache<K, V>::use(const K& key) {
+	auto it = std::find(lru_map.begin(), lru_map.end(), key);
+	if (it == lru_map.end())
+		return false;
+
+	lru_map.remove(key);
+	lru_map.push_back(key);
+	return true;
+}
+
+template<typename K, typename V>
+LRUCache<K, V>::~LRUCache() {
+	while (!lru_map.empty())
+		lru_map.pop_front();
 	cache_map.clear();
 }
 
 int main()
 {
-	// Tests for the LIFOCache class
-	LIFOCache<int, int> cachedt(4);
+	// Tests for the LRUCache class
+	LRUCache<int, int> cachedt(4);
 	cachedt.insert(1, 1);
 	cachedt.insert(2, 2);
 	cachedt.insert(3, 3);
@@ -88,11 +115,12 @@ int main()
 	
 	std::cout << cachedt.get(7) << std::endl; // 7
 	std::cout << cachedt.get(8) << std::endl; // 8
+	std::cout << cachedt.get(1) << std::endl; // 1
 
 	cachedt.insert(9, 9);
 
-	std::cout << cachedt.get(7) << std::endl; // 7
-	std::cout << cachedt.get(8) << std::endl; // NULL
+	std::cout << cachedt.get(1) << std::endl; // 1
+	std::cout << cachedt.get(2) << std::endl; // NULL
 	std::cout << cachedt.get(9) << std::endl; // 9
 
 	return 0;
