@@ -13,6 +13,11 @@ AbstractCache<K, V>::AbstractCache(size_t cache_size) : max_cache_size(cache_siz
 }
 
 template<typename K, typename V>
+bool AbstractCache<K, V>::use(const K& key) {
+	return cache_map.find(key) != cache_map.end();
+}
+
+template<typename K, typename V>
 V AbstractCache<K, V>::get(const K& key) {
 	if (!use(key)) {
 		std::cerr << "Invalid Key requested. Returning default value\n";
@@ -32,11 +37,6 @@ void FIFOCache<K, V>::insert(const K& key, const V& value) {
 }
 
 template<typename K, typename V>
-bool FIFOCache<K, V>::use(const K& key) {
-	return cache_map.find(key) != cache_map.end();
-}
-
-template<typename K, typename V>
 FIFOCache<K, V>::~FIFOCache() {
 	while (!fifo_map.empty())
 		fifo_map.pop();
@@ -51,11 +51,6 @@ void LIFOCache<K, V>::insert(const K& key, const V& value) {
 	}
 	cache_map[key] = value;
 	lifo_map.push(key);
-}
-
-template<typename K, typename V>
-bool LIFOCache<K, V>::use(const K& key) {
-	return cache_map.find(key) != cache_map.end();
 }
 
 template<typename K, typename V>
@@ -102,26 +97,26 @@ int main()
 	cachedt.insert(3, 3);
 	cachedt.insert(4, 4);
 
-	std::cout << cachedt.get(1) << std::endl; // 1
-	std::cout << cachedt.get(2) << std::endl; // 2
-	std::cout << cachedt.get(3) << std::endl; // 3
-	std::cout << cachedt.get(4) << std::endl; // 4
-	std::cout << cachedt.get(5) << std::endl; // NULL
+	std::cout << cachedt[1] << std::endl; // 1
+	std::cout << cachedt[2] << std::endl; // 2
+	std::cout << cachedt[3] << std::endl; // 3
+	std::cout << cachedt[4] << std::endl; // 4
+	std::cout << cachedt[5] << std::endl; // NULL
 
 	cachedt.insert(5, 5);
 	cachedt.insert(6, 6);
 	cachedt.insert(7, 7);
 	cachedt.insert(8, 8);
 	
-	std::cout << cachedt.get(7) << std::endl; // 7
-	std::cout << cachedt.get(8) << std::endl; // 8
-	std::cout << cachedt.get(1) << std::endl; // 1
+	std::cout << cachedt[7] << std::endl; // 7
+	std::cout << cachedt[8] << std::endl; // 8
+	std::cout << cachedt[1] << std::endl; // 1
 
 	cachedt.insert(9, 9);
 
-	std::cout << cachedt.get(1) << std::endl; // 1
-	std::cout << cachedt.get(2) << std::endl; // NULL
-	std::cout << cachedt.get(9) << std::endl; // 9
+	std::cout << cachedt[1] << std::endl; // 1
+	std::cout << cachedt[2] << std::endl; // NULL
+	std::cout << cachedt[9] << std::endl; // 9
 
 	return 0;
 }
