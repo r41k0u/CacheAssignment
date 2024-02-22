@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <mutex>
 #include <vector>
+#include <list
 
 // AbstractCache class
 //
